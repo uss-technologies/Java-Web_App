@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javadeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      name: javawebapppod
+      namespace: senons
+      labels:
+        app: javawebapppod
+    spec:
+      containers:
+      - name: javawebappcontainer
+        image: senoritahub/java-web-app:1
+        resources:
+          requests:
+            memory: "500Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: nodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+
+---
+apiVersion: v1
+kind: RESOURCEQUOTA 
+metadata:
+  name: senons-resource-quota
+  namespace: senons
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "4Gi"
+    limits.cpu: "4"
+    limits.memory: "16Gi"
+    pods: 10
+  
