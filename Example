@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkinsdeployment
+  labels:
+    app: jenkinsapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: jenkinsapp
+  template:
+    metadata:
+      name: jenkinspod
+      labels:
+        app: jenkinsapp
+    spec:
+      containers:
+      - name: jenkinscontainer
+        image: jenkins/jenkins:lts
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 256m
+            memory: 512Mi
+        volumeMounts:
+        - name: jenkinsvol
+          mountpath: /var/jenkins_home
+    volumes:
+    - name: jenkinsvol
+      persistentVolumeClaim:
+        claimName: jenkinspvc
+      nfs:
+        server: 172.16.234.31
+        path: /mnt/nfs_share
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkinssvc
+spec:
+  selector:
+    app: jenkinsapp
+  ports:
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfspv
+spec:
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: manual
+  nfs:
+    server: 172.16.234.31
+    path: /mnt/nfs_share
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkinsvol
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: manual
